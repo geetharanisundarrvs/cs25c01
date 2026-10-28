@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CS25C01 - Computer Programming: C LAB (Anna University Reg 2025)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"Fira Code"', 'monospace']
+          },
+          colors: {
+            ide: {
+              bg: '#010409',
+              sidebar: '#090d14',
+              surface: '#0d1117',
+              border: '#21262d',
+              accent: '#38bdf8',
+              accentHover: '#0284c7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #010409; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+    .line-counter {
+      width: 46px;
+      padding: 16px 8px 16px 0;
+      text-align: right;
+      color: #484f58;
+      background: #090d14;
+      border-right: 1px solid #21262d;
+      user-select: none;
+      font-size: var(--editor-font-size, 13px);
+      line-height: 1.6;
+      white-space: pre;
+      font-family: 'Fira Code', monospace;
+    }
+    #code-editor {
+      tab-size: 4;
+      white-space: pre;
+      word-wrap: normal;
+      overflow-x: auto;
+      line-height: 1.6;
+      font-family: 'Fira Code', monospace;
+      font-size: var(--editor-font-size, 13px);
+    }
+    .view-mode-active {
+      background: #1e293b;
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+    @media print {
+      body { background: #fff !important; color: #000 !important; overflow: visible !important; }
+      #app-shell { display: none !important; }
+      #print-canvas { display: block !important; }
+      .print-page { page-break-after: always; padding: 20px; }
+      pre { background: #f8fafc !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; }
+    }
+  </style>
+</head>
+<body class="bg-[#010409] text-slate-100 font-sans antialiased overflow-hidden select-none">
+  <div id="app-shell" class="flex h-screen w-screen overflow-hidden">
+    <!-- Backdrop overlay for mobile drawer -->
+    <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+    <!-- Navigation Sidebar -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-72 bg-[#090d14] border-r border-[#21262d] flex flex-col transition-transform duration-200 -translate-x-full md:translate-x-0 shadow-2xl md:shadow-none">
+      <div class="p-3.5 border-b border-[#21262d] flex items-center justify-between bg-[#0d1117]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold font-mono text-sm">
+            &lt;C&gt;
+          </div>
+          <div>
+            <h1 class="text-xs font-bold tracking-wide text-slate-100">CS25C01 C LAB</h1>
+            <p class="text-[10px] text-sky-400 font-mono font-medium">Anna Univ Reg 2025</p>
+          </div>
+        </div>
+        <button onclick="toggleSidebar(false)" class="md:hidden text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Quick Search Bar -->
+      <div class="p-2.5 border-b border-[#21262d] bg-[#0d1117]/60">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-[11px] text-slate-500"></i>
+          <input id="search-input" oninput="filterExercises()" type="text" placeholder="Search experiments, functions..." 
+            class="w-full bg-[#010409] border border-[#21262d] rounded-md py-1.5 pl-7 pr-2.5 text-xs text-slate-200 focus:outline-none focus:border-sky-500 placeholder-slate-500 font-sans">
+        </div>
+      </div>
+
+      <div class="px-3 py-1.5 bg-[#010409]/60 border-b border-[#21262d] flex items-center justify-between text-[10px] text-slate-400 font-mono">
+        <span>Syllabus Checklist</span>
+        <span id="module-counter" class="text-sky-400 font-semibold">12 items</span>
+      </div>
+
+      <!-- List of Experiments -->
+      <nav class="flex-1 overflow-y-auto p-2 space-y-1" id="nav-list"></nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-2.5 border-t border-[#21262d] bg-[#0d1117] flex items-center justify-between text-[11px] text-slate-400">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="font-mono text-[10px]">GCC 14.2 Toolchain</span>
+        </div>
+        <button onclick="toggleModal('info-modal', true)" class="text-slate-400 hover:text-sky-400 text-xs px-1.5 py-0.5 rounded transition">
+          <i class="fa-solid fa-circle-question"></i>
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 bg-[#010409] overflow-hidden">
+      <!-- Universal Top Bar -->
+      <header class="h-12 border-b border-[#21262d] bg-[#0d1117] px-3 sm:px-4 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <button onclick="toggleSidebar(true)" class="md:hidden text-slate-400 hover:text-white p-1.5 rounded bg-slate-800 border border-slate-700">
+            <i class="fa-solid fa-bars text-xs"></i>
+          </button>
+          <div class="flex items-center gap-2 truncate">
+            <span id="active-badge" class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-sky-950/80 border border-sky-800/60 text-sky-300">Ex.No. 1.a</span>
+            <span id="active-name" class="text-xs font-semibold text-slate-200 truncate">Biggest Number Among Three Numbers</span>
+          </div>
+        </div>
+
+        <!-- View Mode Switcher + Actions -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <!-- View Modes -->
+          <div class="flex items-center bg-[#010409] p-0.5 rounded-lg border border-[#21262d] text-xs">
+            <button onclick="setLayoutMode('split')" id="btn-mode-split" title="Split Screen (Manual + Code & Terminal)"
+              class="px-2 py-1 rounded text-slate-400 hover:text-white flex items-center gap-1 transition view-mode-active">
+              <i class="fa-solid fa-table-columns text-xs"></i>
+              <span class="hidden xl:inline text-[11px]">Split</span>
+            </button>
+            <button onclick="setLayoutMode('code')" id="btn-mode-code" title="Focus Full Program (Expanded code reader)"
+              class="px-2 py-1 rounded text-slate-400 hover:text-white flex items-center gap-1 transition">
+              <i class="fa-solid fa-code text-xs"></i>
+              <span class="hidden sm:inline text-[11px] font-semibold text-sky-400">Full Program</span>
+            </button>
+            <button onclick="setLayoutMode('manual')" id="btn-mode-manual" title="Manual Reading View"
+              class="px-2 py-1 rounded text-slate-400 hover:text-white flex items-center gap-1 transition">
+              <i class="fa-solid fa-book-open text-xs"></i>
+              <span class="hidden xl:inline text-[11px]">Manual</span>
+            </button>
+          </div>
+
+          <!-- Print PDF Button -->
+          <button onclick="printAnnaUnivRecord()" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded bg-sky-600 hover:bg-sky-500 text-white transition shadow-sm">
+            <i class="fa-solid fa-print text-xs"></i>
+            <span class="hidden sm:inline">Print Record</span>
+          </button>
+        </div>
+      </header>
+
+      <div id="workspace-container" class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden transition-all duration-300">
+        
+        <!-- Left Panel: Manual, PAC, Algorithm, Pseudocode, Viva (Default 5 cols) -->
+        <section id="panel-manual" class="lg:col-span-5 flex flex-col border-b lg:border-b-0 lg:border-r border-[#21262d] bg-[#0d1117]/40 overflow-hidden">
+          <div class="flex items-center justify-between border-b border-[#21262d] bg-[#090d14] px-3 pt-1 shrink-0">
+            <div class="flex items-center gap-1 overflow-x-auto">
+              <button onclick="switchDocTab('manual')" id="tab-btn-manual" class="px-3 py-2 text-xs font-semibold rounded-t border-b-2 border-sky-400 text-sky-400 bg-[#161b22] flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-book-bookmark text-xs"></i> <span>Aim & PAC</span>
+              </button>
+              <button onclick="switchDocTab('algorithm')" id="tab-btn-algorithm" class="px-3 py-2 text-xs font-semibold rounded-t border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-diagram-project text-xs"></i> <span>Algorithm</span>
+              </button>
+              <button onclick="switchDocTab('viva')" id="tab-btn-viva" class="px-3 py-2 text-xs font-semibold rounded-t border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-graduation-cap text-xs"></i> <span>Viva Voce</span>
+              </button>
+            </div>
+            <button onclick="setLayoutMode('code')" title="Maximize Code Editor" class="hidden lg:flex text-slate-400 hover:text-sky-400 p-1 text-xs">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+          </div>
+
+          <div id="manual-content" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs text-slate-300 leading-relaxed">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- Right Panel: C Code Editor (Full Viewable) & GCC Console (Default 7 cols) -->
+        <section id="panel-code" class="lg:col-span-7 flex flex-col h-full bg-[#010409] overflow-hidden">
+          
+          <!-- Code Editor Pane -->
+          <div id="editor-wrapper" class="flex-1 flex flex-col border-b border-[#21262d] min-h-0 bg-[#010409] relative">
+            <!-- Editor Toolbar -->
+            <div class="h-9 bg-[#090d14] border-b border-[#21262d] px-3 flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+                <span class="text-xs font-mono text-slate-300 font-semibold ml-1">program.c</span>
+                <span id="line-indicator" class="text-[10px] font-mono text-slate-500 px-1 rounded bg-[#161b22]">0 lines</span>
+              </div>
+
+              <!-- Full Code Tools: Font Zoom, Copy, Download, Zen Toggle, Run -->
+              <div class="flex items-center gap-1.5">
+                <!-- Font Zoom -->
+                <div class="flex items-center bg-[#161b22] border border-[#30363d] rounded text-[11px] font-mono">
+                  <button onclick="changeFontSize(-1)" class="px-2 py-0.5 text-slate-400 hover:text-white" title="Decrease Code Font Size">A-</button>
+                  <span id="font-size-label" class="px-1 text-sky-400 text-[10px]">13px</span>
+                  <button onclick="changeFontSize(1)" class="px-2 py-0.5 text-slate-400 hover:text-white" title="Increase Code Font Size">A+</button>
+                </div>
+
+                <button onclick="copySourceCode()" class="text-[11px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition" title="Copy Full Code">
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+                <button onclick="downloadCFile()" class="text-[11px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition" title="Download .c File">
+                  <i class="fa-solid fa-download"></i>
+                </button>
+                <button onclick="toggleZenCodeModal(true)" class="text-[11px] text-slate-400 hover:text-sky-400 px-2 py-1 rounded hover:bg-slate-800 transition" title="Zen Fullscreen Code Reader">
+                  <i class="fa-solid fa-expand"></i>
+                </button>
+                <button onclick="resetSourceCode()" class="text-[11px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition" title="Reset Code">
+                  <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button onclick="executeGccBuild()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold flex items-center gap-1.5 transition shadow-sm ml-1">
+                  <i class="fa-solid fa-play text-[10px]"></i>
+                  <span>Build & Run</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Code Viewing Area with Synced Line Numbers -->
+            <div class="flex-1 overflow-hidden flex relative bg-[#010409]">
+              <div id="line-counter" class="line-counter"></div>
+              <textarea id="code-editor" spellcheck="false" 
+                oninput="updateLineNumbers()" onscroll="syncEditorScroll()"
+                class="flex-1 p-3.5 bg-[#010409] text-sky-200 font-mono text-xs leading-relaxed outline-none border-none resize-none overflow-auto select-text"></textarea>
+            </div>
+          </div>
+
+          <div id="terminal-wrapper" class="h-64 sm:h-72 flex flex-col bg-[#090d14] shrink-0 border-t border-[#21262d] transition-all duration-300">
+            <!-- Terminal Header -->
+            <div class="h-9 px-3 bg-[#0d1117] border-b border-[#21262d] flex items-center justify-between shrink-0">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono text-slate-300 font-semibold flex items-center gap-1.5">
+                  <i class="fa-solid fa-terminal text-sky-400 text-xs"></i> Bash Simulator
+                </span>
+                <span id="exit-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 hidden">Exit Code: 0</span>
+                <span id="runtime-badge" class="text-[10px] font-mono text-slate-400 hidden"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="toggleTerminalCollapse()" class="text-[11px] text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800 transition" title="Toggle Terminal Size">
+                  <i id="term-toggle-icon" class="fa-solid fa-chevron-down mr-1"></i><span id="term-toggle-label">Shrink</span>
+                </button>
+                <button onclick="clearTerminal()" class="text-[11px] text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-slate-800 transition">
+                  <i class="fa-solid fa-eraser mr-1"></i>Clear
+                </button>
+              </div>
+            </div>
+
+            <!-- Standard Input Bar -->
+            <div class="px-3 py-1.5 bg-[#090d14] border-b border-[#21262d] flex items-center gap-2">
+              <label for="stdin-value" class="text-[11px] font-mono text-sky-400 font-semibold shrink-0 flex items-center gap-1">
+                <i class="fa-solid fa-keyboard text-[10px]"></i> stdin &gt;
+              </label>
+              <input id="stdin-value" type="text" placeholder="Supply runtime inputs (e.g., numbers, strings)" 
+                class="flex-1 bg-[#010409] border border-[#21262d] rounded px-2.5 py-1 text-xs font-mono text-emerald-400 focus:outline-none focus:border-sky-500 placeholder-slate-600">
+            </div>
+
+            <!-- Terminal Screen -->
+            <div id="terminal-screen" class="flex-1 p-3 font-mono text-xs overflow-y-auto bg-[#010409] text-slate-200 select-text leading-relaxed">
+              <span class="text-slate-500">// GCC 14.2 C23 toolchain ready. Click 'Build & Run' or press Ctrl+Enter.</span>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <div id="zen-modal" class="fixed inset-0 z-50 bg-[#010409] hidden flex flex-col p-4 sm:p-6 overflow-hidden">
+    <div class="flex items-center justify-between pb-3 border-b border-[#21262d] shrink-0">
+      <div class="flex items-center gap-2.5">
+        <span class="w-3 h-3 rounded-full bg-red-500"></span>
+        <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+        <span id="zen-title" class="font-mono text-sm text-sky-400 font-bold ml-2">program.c - Zen Fullscreen Reader</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="copySourceCode()" class="px-3 py-1 bg-[#161b22] text-xs rounded border border-[#30363d] text-slate-200 hover:text-white">
+          <i class="fa-regular fa-copy mr-1"></i>Copy
+        </button>
+        <button onclick="toggleZenCodeModal(false)" class="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-xs font-semibold rounded text-white">
+          <i class="fa-solid fa-compress mr-1"></i>Exit Zen View
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-auto mt-4 p-4 bg-[#090d14] rounded-lg border border-[#21262d]">
+      <pre id="zen-code-pre" class="font-mono text-sm text-sky-200 leading-relaxed overflow-x-auto select-text"></pre>
+    </div>
+  </div>
+
+  <!-- Info / Syllabus Modal -->
+  <div id="info-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-[#0d1117] border border-[#30363d] rounded-xl max-w-lg w-full p-5 text-slate-200 space-y-3.5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#21262d] pb-2.5">
+        <h3 class="text-sm font-bold text-sky-400 flex items-center gap-2">
+          <i class="fa-solid fa-graduation-cap"></i> CS25C01 - Syllabus & Regulation Guide
+        </h3>
+        <button onclick="toggleModal('info-modal', false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="text-xs space-y-2.5 text-slate-300 leading-relaxed">
+        <p><strong class="text-white">Institution:</strong> Anna University Chennai, Regulation 2025</p>
+        <p><strong class="text-white">Course Title:</strong> Computer Programming: C LAB (CS25C01)</p>
+        <p><strong class="text-white">Full Program Visibility:</strong> Use the <span class="text-sky-400 font-semibold">'Full Program'</span> toggle in the header to expand the source code pane, zoom font sizes, and inspect the code without scrolling restrictions.</p>
+        <p><strong class="text-white">Marks Assessment:</strong> Model Practical & Record Work: 20 Marks | University Lab Exam & Coding: 50 Marks | Viva Voce: 30 Marks.</p>
+      </div>
+      <div class="text-right pt-2 border-t border-[#21262d]">
+        <button onclick="toggleModal('info-modal', false)" class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-semibold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Canvas for Anna University Record Work -->
+  <div id="print-canvas" class="hidden p-8 text-black bg-white"></div>
+
+  <!-- Toast Notification Deck -->
+  <div id="toast-deck" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    const labExperiments = [
+      {
+        id: "ex1a",
+        number: "Ex.No. 1.a",
+        title: "Biggest Number Among Three Numbers",
+        category: "Decision Logic",
+        aim: "To Write a robust C Program to find the biggest number among three numbers using structured decision-making.",
+        pac: [
+          { sec: "Input", desc: "Three signed integer values: N1, N2, and N3." },
+          { sec: "Process", desc: "Assign Max = N1. Check if N2 > Max, update Max = N2. Check if N3 > Max, update Max = N3." },
+          { sec: "Output", desc: "The largest integer among N1, N2, and N3." }
+        ],
+        pseudocode: `START
+  READ N1, N2, N3
+  SET Max = N1
+  IF N2 > Max THEN
+    Max = N2
+  ENDIF
+  IF N3 > Max THEN
+    Max = N3
+  ENDIF
+  PRINT Max
+END`,
+        algorithm: [
+          "Start the Program execution.",
+          "Declare four integer variables: N1, N2, N3, and Max.",
+          "Prompt the user and read three integer values via standard input.",
+          "Validate whether exactly three valid integers were successfully parsed.",
+          "Initialize the Max variable with the value of N1.",
+          "Compare N2 with Max; if N2 is strictly greater, update Max = N2.",
+          "Compare N3 with Max; if N3 is strictly greater, update Max = N3.",
+          "Print the final value of Max as the largest number.",
+          "Terminate the program successfully with exit code 0."
+        ],
+        viva: [
+          { q: "How can this logic be written in a single line using nested ternary operators?", a: "int max = (N1 > N2) ? ((N1 > N3) ? N1 : N3) : ((N2 > N3) ? N2 : N3);" },
+          { q: "What does the return value of scanf() represent?", a: "It returns the number of input items successfully matched and assigned, allowing robust error checking." },
+          { q: "What happens if all three numbers entered are identical?", a: "Neither 'if' condition is satisfied, so Max remains equal to N1, correctly printing that shared value." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 1.a: Biggest Number Among Three Numbers
+ * Regulation 2025 - Anna University
+ */
+
+int main(void) {
+    int N1, N2, N3;
+    int Max;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: FIND BIGGEST OF THREE NUMBERS        \\n");
+    printf("==================================================\\n");
+    printf("Enter three integer numbers (separated by spaces): ");
+
+    if (scanf("%d %d %d", &N1, &N2, &N3) != 3) {
+        fprintf(stderr, "\\n[Error]: Invalid input! Please enter three valid integers.\\n");
+        return EXIT_FAILURE;
+    }
+
+    printf("\\nInput Received: N1 = %d, N2 = %d, N3 = %d\\n", N1, N2, N3);
+
+    /* Assume N1 is the greatest initially */
+    Max = N1;
+
+    /* Check if N2 exceeds current Max */
+    if (N2 > Max) {
+        Max = N2;
+    }
+
+    /* Check if N3 exceeds current Max */
+    if (N3 > Max) {
+        Max = N3;
+    }
+
+    printf("--------------------------------------------------\\n");
+    printf("Result: The biggest number is: %d\\n", Max);
+    printf("--------------------------------------------------\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "45 89 23",
+        runner: (stdin) => {
+          const parts = stdin.trim().split(/\s+/).filter(Boolean).map(Number);
+          if (parts.length < 3 || parts.some(isNaN)) {
+            return {
+              stdout: `==================================================\n   CS25C01: FIND BIGGEST OF THREE NUMBERS        \n==================================================\nEnter three integer numbers (separated by spaces): \n[Error]: Invalid input! Please enter three valid integers.`,
+              exitCode: 1
+            };
+          }
+          const [n1, n2, n3] = parts;
+          let max = n1;
+          if (n2 > max) max = n2;
+          if (n3 > max) max = n3;
+          return {
+            stdout: `==================================================\n   CS25C01: FIND BIGGEST OF THREE NUMBERS        \n==================================================\nEnter three integer numbers (separated by spaces): \nInput Received: N1 = ${n1}, N2 = ${n2}, N3 = ${n3}\n--------------------------------------------------\nResult: The biggest number is: ${max}\n--------------------------------------------------`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex1b",
+        number: "Ex.No. 1.b",
+        title: "Sum of Three Numbers & Odd/Even Determination",
+        category: "Basic Logic",
+        aim: "To Write a C Program for finding the sum of three numbers and determining whether the resulting sum is Odd or Even.",
+        pac: [
+          { sec: "Input", desc: "Three numbers num1, num2, num3." },
+          { sec: "Process", desc: "Compute sum = num1 + num2 + num3; evaluate parity using (sum % 2 == 0) or bitwise (sum & 1)." },
+          { sec: "Output", desc: "The arithmetic sum and its classification as EVEN or ODD." }
+        ],
+        pseudocode: `BEGIN
+  READ num1, num2, num3
+  sum = num1 + num2 + num3
+  PRINT sum
+  IF (sum MOD 2 == 0) THEN
+    PRINT "EVEN"
+  ELSE
+    PRINT "ODD"
+  ENDIF
+END`,
+        algorithm: [
+          "Start.",
+          "Declare integer variables num1, num2, num3, and sum.",
+          "Read inputs for num1, num2, and num3 from standard input.",
+          "Compute sum = num1 + num2 + num3.",
+          "Display the calculated sum.",
+          "Evaluate the remainder of sum divided by 2: If zero, display 'The sum is an EVEN number'; else display 'The sum is an ODD number'.",
+          "End the program."
+        ],
+        viva: [
+          { q: "How can parity (odd/even) be checked using bitwise operations?", a: "If (sum & 1) equals 0, the least significant bit is 0, meaning it is Even; if 1, it is Odd." },
+          { q: "Can integer overflow occur when adding three numbers?", a: "Yes, if the combined sum exceeds INT_MAX (defined in <limits.h>)." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 1.b: Sum of Three Numbers & Odd/Even Check
+ * Regulation 2025 - Anna University
+ */
+
+int main(void) {
+    long long num1, num2, num3;
+    long long sum;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: SUM OF 3 NUMBERS & PARITY CHECK      \\n");
+    printf("==================================================\\n");
+    printf("Enter three integer values: ");
+
+    if (scanf("%lld %lld %lld", &num1, &num2, &num3) != 3) {
+        fprintf(stderr, "\\n[Error]: Input format error. Please enter integers.\\n");
+        return EXIT_FAILURE;
+    }
+
+    sum = num1 + num2 + num3;
+
+    printf("\\n--------------------------------------------------\\n");
+    printf("Inputs : %lld, %lld, %lld\\n", num1, num2, num3);
+    printf("Sum    : %lld\\n", sum);
+
+    /* Test parity using modulo operator */
+    if (sum % 2 == 0) {
+        printf("Parity : The sum %lld is an EVEN number.\\n", sum);
+    } else {
+        printf("Parity : The sum %lld is an ODD number.\\n", sum);
+    }
+    printf("--------------------------------------------------\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "12 17 25",
+        runner: (stdin) => {
+          const parts = stdin.trim().split(/\s+/).filter(Boolean).map(Number);
+          if (parts.length < 3 || parts.some(isNaN)) {
+            return { stdout: "Error: Please supply 3 integer numbers in stdin.", exitCode: 1 };
+          }
+          const sum = parts[0] + parts[1] + parts[2];
+          return {
+            stdout: `==================================================\n   CS25C01: SUM OF 3 NUMBERS & PARITY CHECK      \n==================================================\nEnter three integer values: \n--------------------------------------------------\nInputs : ${parts[0]}, ${parts[1]}, ${parts[2]}\nSum    : ${sum}\nParity : The sum ${sum} is an ${sum % 2 === 0 ? "EVEN" : "ODD"} number.\n--------------------------------------------------`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex1c",
+        number: "Ex.No. 1.c",
+        title: "Basic Arithmetic Operations",
+        category: "Operators",
+        aim: "To Write a C Program to perform all basic arithmetic operations (Addition, Subtraction, Multiplication, Division, and Modulo) with zero-division handling.",
+        pac: [
+          { sec: "Input", desc: "Two numbers num1 and num2." },
+          { sec: "Process", desc: "Compute num1+num2, num1-num2, num1*num2, num1/num2, and num1%num2." },
+          { sec: "Output", desc: "Display results of all five arithmetic expressions." }
+        ],
+        pseudocode: `BEGIN
+  READ num1, num2
+  PRINT Sum = num1 + num2
+  PRINT Diff = num1 - num2
+  PRINT Product = num1 * num2
+  IF num2 != 0 THEN
+    PRINT Quotient = num1 / num2
+    PRINT Remainder = num1 MOD num2
+  ELSE
+    PRINT "Division by zero is undefined"
+  ENDIF
+END`,
+        algorithm: [
+          "Start.",
+          "Declare variables num1, num2, sum, diff, prod, quot, and rem.",
+          "Prompt and read two integer values from standard input.",
+          "Compute addition: sum = num1 + num2.",
+          "Compute subtraction: diff = num1 - num2.",
+          "Compute multiplication: prod = num1 * num2.",
+          "Check if divisor num2 != 0: Compute quot = num1 / num2 and rem = num1 % num2. Else alert division by zero.",
+          "Display all computed values.",
+          "Stop."
+        ],
+        viva: [
+          { q: "What happens if modulo is performed on floating-point operands in C?", a: "Compilation error. The '%' operator only accepts integers. For floating point modulo, use fmod() from <math.h>." },
+          { q: "What is integer division truncation in C?", a: "Fractional digits are discarded towards zero (e.g., 7 / 2 evaluates to 3)." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 1.c: Basic Arithmetic Operations
+ * Regulation 2025 - Anna University
+ */
+
+int main(void) {
+    int num1, num2;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: ARITHMETIC OPERATORS BENCHMARK        \\n");
+    printf("==================================================\\n");
+    printf("Enter two integer operands (num1 and num2): ");
+
+    if (scanf("%d %d", &num1, &num2) != 2) {
+        fprintf(stderr, "\\n[Error]: Invalid input. Two integers required.\\n");
+        return EXIT_FAILURE;
+    }
+
+    printf("\\nOperands: num1 = %d, num2 = %d\\n", num1, num2);
+    printf("--------------------------------------------------\\n");
+    printf("Addition       (num1 + num2) = %d\\n", num1 + num2);
+    printf("Subtraction    (num1 - num2) = %d\\n", num1 - num2);
+    printf("Multiplication (num1 * num2) = %d\\n", num1 * num2);
+
+    if (num2 != 0) {
+        printf("Quotient       (num1 / num2) = %d (Integer Division)\\n", num1 / num2);
+        printf("Floating Div   (num1 / num2) = %.4f\\n", (double)num1 / num2);
+        printf("Remainder      (num1 %% num2) = %d\\n", num1 % num2);
+    } else {
+        printf("Quotient       : Undefined (Division by Zero!)\\n");
+        printf("Remainder      : Undefined (Modulo by Zero!)\\n");
+    }
+    printf("--------------------------------------------------\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "34 8",
+        runner: (stdin) => {
+          const [n1, n2] = stdin.trim().split(/\s+/).map(Number);
+          if (isNaN(n1) || isNaN(n2)) return { stdout: "Error: Supply two valid integers in stdin.", exitCode: 1 };
+          let out = `==================================================\n   CS25C01: ARITHMETIC OPERATORS BENCHMARK        \n==================================================\nEnter two integer operands (num1 and num2): \nOperands: num1 = ${n1}, num2 = ${n2}\n--------------------------------------------------\nAddition       (num1 + num2) = ${n1 + n2}\nSubtraction    (num1 - num2) = ${n1 - n2}\nMultiplication (num1 * num2) = ${n1 * n2}\n`;
+          if (n2 !== 0) {
+            out += `Quotient       (num1 / num2) = ${Math.trunc(n1 / n2)} (Integer Division)\nFloating Div   (num1 / num2) = ${(n1 / n2).toFixed(4)}\nRemainder      (num1 % num2) = ${n1 % n2}\n--------------------------------------------------`;
+          } else {
+            out += `Quotient       : Undefined (Division by Zero!)\nRemainder      : Undefined (Modulo by Zero!)\n--------------------------------------------------`;
+          }
+          return { stdout: out, exitCode: 0 };
+        }
+      },
+      {
+        id: "ex2a",
+        number: "Ex.No. 2.a",
+        title: "Decision Making Statements",
+        category: "Control Flow",
+        aim: "To Write a comprehensive C Program to demonstrate decision-making control statements: simple if, if-else, else-if ladder, and switch-case.",
+        pac: [
+          { sec: "Control", desc: "Grade allocation using else-if ladder and day-of-the-week mapping via switch-case." }
+        ],
+        pseudocode: `READ score, day
+IF score >= 90 THEN Grade = 'A'
+ELSE IF score >= 80 THEN Grade = 'B'
+ELSE IF score >= 50 THEN Grade = 'C'
+ELSE Grade = 'F'
+SWITCH(day)
+  CASE 1: PRINT Monday ... CASE 7: PRINT Sunday
+ENDSWITCH`,
+        algorithm: [
+          "Start.",
+          "Read an academic score (0-100) and day index (1-7).",
+          "Apply an else-if ladder to evaluate score bounds and assign the corresponding letter grade.",
+          "Apply a switch-case statement on the day index to display the day name.",
+          "Include a default branch in switch to catch out-of-range inputs.",
+          "Stop."
+        ],
+        viva: [
+          { q: "What is case fall-through in C switch statements?", a: "If a break statement is omitted in a case, execution flows consecutively into the following case regardless of whether its label matches." },
+          { q: "Can float or string values be used in switch conditions?", a: "No, C switch expressions must evaluate to an integral or enumeration type." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 2.a: Decision Making Statements
+ * Regulation 2025 - Anna University
+ */
+
+int main(void) {
+    int score = 85;
+    int day = 3;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: DECISION MAKING STRUCTURES           \\n");
+    printf("==================================================\\n");
+
+    /* 1. Else-If Ladder for Grade Classification */
+    printf("[1] Else-If Ladder Assessment:\\n");
+    printf("    Exam Score Evaluated: %d\\n", score);
+
+    if (score >= 90 && score <= 100) {
+        printf("    Result: Grade 'O' (Outstanding)\\n");
+    } else if (score >= 80 && score < 90) {
+        printf("    Result: Grade 'A+' (Excellent)\\n");
+    } else if (score >= 70 && score < 80) {
+        printf("    Result: Grade 'A' (Very Good)\\n");
+    } else if (score >= 60 && score < 70) {
+        printf("    Result: Grade 'B+' (Good)\\n");
+    } else if (score >= 50 && score < 60) {
+        printf("    Result: Grade 'B' (Pass)\\n");
+    } else {
+        printf("    Result: Grade 'RA' (Re-Appear / Arrear)\\n");
+    }
+
+    /* 2. Switch-Case for Day Mapping */
+    printf("\\n[2] Switch-Case Day Dispatch:\\n");
+    printf("    Day Index: %d\\n", day);
+    printf("    Day Name : ");
+
+    switch (day) {
+        case 1:
+            printf("Monday - Academic Working Day\\n");
+            break;
+        case 2:
+            printf("Tuesday - Academic Working Day\\n");
+            break;
+        case 3:
+            printf("Wednesday - Midweek Laboratory Session\\n");
+            break;
+        case 4:
+            printf("Thursday - Academic Working Day\\n");
+            break;
+        case 5:
+            printf("Friday - Academic Working Day\\n");
+            break;
+        case 6:
+            printf("Saturday - Co-Curricular Activities\\n");
+            break;
+        case 7:
+            printf("Sunday - Weekend Holiday\\n");
+            break;
+        default:
+            printf("Invalid Day Index entered! Must be between 1 and 7.\\n");
+            break;
+    }
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "85 3",
+        runner: () => {
+          return {
+            stdout: `==================================================\n   CS25C01: DECISION MAKING STRUCTURES           \n==================================================\n[1] Else-If Ladder Assessment:\n    Exam Score Evaluated: 85\n    Result: Grade 'A+' (Excellent)\n\n[2] Switch-Case Day Dispatch:\n    Day Index: 3\n    Day Name : Wednesday - Midweek Laboratory Session\n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex2b",
+        number: "Ex.No. 2.b",
+        title: "Looping Statements (for, while, do-while)",
+        category: "Control Flow",
+        aim: "To Write a C Program to demonstrate the syntax and behavior of all three iterative looping constructs: for loop, while loop, and do-while loop.",
+        pac: [
+          { sec: "Loops", desc: "Entry-controlled loops (for, while) vs exit-controlled loop (do-while)." }
+        ],
+        pseudocode: `FOR i=1..3: PRINT i
+WHILE j<=3: PRINT j, INC j
+DO: PRINT k, INC k WHILE k<=3`,
+        algorithm: [
+          "Start.",
+          "Demonstrate for loop: initialize counter, check condition, increment, and display iteration count.",
+          "Demonstrate while loop: test condition before entering loop body.",
+          "Demonstrate do-while loop: execute loop body once unconditionally, then evaluate test condition.",
+          "Stop."
+        ],
+        viva: [
+          { q: "What is the key distinction between while and do-while loops?", a: "while is entry-controlled (checks condition before executing), whereas do-while is exit-controlled (executes body at least once even if the condition is false)." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 2.b: Iteration and Looping Statements
+ * Regulation 2025 - Anna University
+ */
+
+int main(void) {
+    int i, j, k;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: LOOPING CONSTRUCTS DEMONSTRATION     \\n");
+    printf("==================================================\\n");
+
+    /* 1. For Loop (Entry-controlled loop) */
+    printf("[1] For Loop (Deterministic range 1 to 4):\\n    Values: ");
+    for (i = 1; i <= 4; i++) {
+        printf("%d ", i);
+    }
+    printf("\\n");
+
+    /* 2. While Loop (Entry-controlled loop) */
+    printf("\\n[2] While Loop (Condition tested before body):\\n    Values: ");
+    j = 1;
+    while (j <= 4) {
+        printf("%d ", j);
+        j++;
+    }
+    printf("\\n");
+
+    /* 3. Do-While Loop (Exit-controlled loop) */
+    printf("\\n[3] Do-While Loop (Guaranteed at least 1 iteration):\\n    Values: ");
+    k = 1;
+    do {
+        printf("%d ", k);
+        k++;
+    } while (k <= 4);
+    printf("\\n");
+
+    /* 4. Nested Loop (Matrix Grid representation) */
+    printf("\\n[4] Nested For Loops (2x3 Coordinate Grid):\\n");
+    for (int r = 1; r <= 2; r++) {
+        printf("    Row %d: ", r);
+        for (int c = 1; c <= 3; c++) {
+            printf("[%d,%d] ", r, c);
+        }
+        printf("\\n");
+    }
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "",
+        runner: () => {
+          return {
+            stdout: `==================================================\n   CS25C01: LOOPING CONSTRUCTS DEMONSTRATION     \n==================================================\n[1] For Loop (Deterministic range 1 to 4):\n    Values: 1 2 3 4 \n\n[2] While Loop (Condition tested before body):\n    Values: 1 2 3 4 \n\n[3] Do-While Loop (Guaranteed at least 1 iteration):\n    Values: 1 2 3 4 \n\n[4] Nested For Loops (2x3 Coordinate Grid):\n    Row 1: [1,1] [1,2] [1,3] \n    Row 2: [2,1] [2,2] [2,3] \n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex2c",
+        number: "Ex.No. 2.c",
+        title: "Jumping Statements (break, continue, goto)",
+        category: "Control Flow",
+        aim: "To Write a C Program to demonstrate jumping statements: break for premature loop termination, continue for iteration bypass, and goto for label jumps.",
+        pac: [
+          { sec: "Jumps", desc: "Break out of iterations, skip step with continue, transfer program counter with goto." }
+        ],
+        pseudocode: `LOOP i: IF i==3 THEN BREAK
+LOOP j: IF j==2 THEN CONTINUE
+GOTO label_complete`,
+        algorithm: [
+          "Start.",
+          "Demonstrate continue statement by bypassing printing on a specific iteration.",
+          "Demonstrate break statement by exiting loop prematurely when a threshold is met.",
+          "Demonstrate unconditional jump using goto to jump past statements to a labeled target.",
+          "Stop."
+        ],
+        viva: [
+          { q: "Why is excessive use of goto discouraged in modern software engineering?", a: "It causes spaghetti code that complicates flow analysis, debugging, and compiler optimizations." },
+          { q: "What is the difference between break in switch vs in loops?", a: "In switch, it prevents case fall-through; in loops, it immediately terminates the innermost enclosing loop." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 2.c: Jumping Statements (break, continue, goto)
+ * Regulation 2025 - Anna University
+ */
+
+int main(void) {
+    printf("==================================================\\n");
+    printf("   CS25C01: JUMPING CONTROL STATEMENTS            \\n");
+    printf("==================================================\\n");
+
+    /* 1. Continue statement (Skip current iteration) */
+    printf("[1] Continue Statement (Bypasses number 3 in 1..5):\\n    Output: ");
+    for (int i = 1; i <= 5; i++) {
+        if (i == 3) {
+            continue; /* Skips remaining statements for i = 3 */
+        }
+        printf("%d ", i);
+    }
+    printf("\\n");
+
+    /* 2. Break statement (Prematurely aborts loop) */
+    printf("\\n[2] Break Statement (Terminates loop when j == 4 in 1..8):\\n    Output: ");
+    for (int j = 1; j <= 8; j++) {
+        if (j == 4) {
+            break; /* Exits loop immediately */
+        }
+        printf("%d ", j);
+    }
+    printf(" [Loop Terminated at 4]\\n");
+
+    /* 3. Goto statement (Unconditional jump) */
+    printf("\\n[3] Goto Statement (Branching to error/recovery label):\\n");
+    printf("    Step A: Normal sequential execution.\\n");
+
+    goto skip_section;
+
+    printf("    Step B: This line will be completely bypassed!\\n");
+
+skip_section:
+    printf("    Step C: Landed at label 'skip_section' via goto jump.\\n");
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "",
+        runner: () => {
+          return {
+            stdout: `==================================================\n   CS25C01: JUMPING CONTROL STATEMENTS            \n==================================================\n[1] Continue Statement (Bypasses number 3 in 1..5):\n    Output: 1 2 4 5 \n\n[2] Break Statement (Terminates loop when j == 4 in 1..8):\n    Output: 1 2 3  [Loop Terminated at 4]\n\n[3] Goto Statement (Branching to error/recovery label):\n    Step A: Normal sequential execution.\n    Step C: Landed at label 'skip_section' via goto jump.\n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex3",
+        number: "Ex.No. 3",
+        title: "Functions: Area of Rectangle & Parameter Passing",
+        category: "Functions",
+        aim: "To Write a C Program to calculate the area of a rectangle and demonstrate Call by Value versus Call by Reference.",
+        pac: [
+          { sec: "Input", desc: "Length and width of rectangle." },
+          { sec: "Process", desc: "Invoke calculateArea(l, w) and swapDimensions(&l, &w) via pointers." },
+          { sec: "Output", desc: "Area calculation and mutated variables via pointer references." }
+        ],
+        pseudocode: `FUNCTION calculateArea(l, w) RETURN l * w
+FUNCTION swap(ptrA, ptrB) temp=*ptrA; *ptrA=*ptrB; *ptrB=temp`,
+        algorithm: [
+          "Start.",
+          "Declare function float calculateArea(float, float) for computation.",
+          "Declare function void swapDimensions(float*, float*) to demonstrate call by reference.",
+          "Read length and width from user.",
+          "Invoke calculateArea() and display return value.",
+          "Pass memory addresses of length and width to swapDimensions() and inspect swapped values.",
+          "Stop."
+        ],
+        viva: [
+          { q: "Does C support native Call by Reference like C++?", a: "No, C achieves call by reference by passing pointer addresses by value." },
+          { q: "What is an inline function in C99/C23?", a: "A function qualified with the 'inline' keyword suggesting the compiler substitute code directly at call sites to remove stack overhead." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 3: Modular Functions & Parameter Passing
+ * Regulation 2025 - Anna University
+ */
+
+/* Function declaration: Call by Value */
+double calculateArea(double length, double width) {
+    return length * width;
+}
+
+/* Function declaration: Call by Reference via pointers */
+void swapDimensions(double *a, double *b) {
+    double temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int main(void) {
+    double length = 12.5;
+    double width = 8.0;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: FUNCTIONS & PARAMETER PASSING         \\n");
+    printf("==================================================\\n");
+    printf("Initial Dimensions : Length = %.2f, Width = %.2f\\n", length, width);
+
+    /* 1. Call by Value computation */
+    double area = calculateArea(length, width);
+    printf("Calculated Area    : %.2f sq. units\\n\\n", area);
+
+    /* 2. Call by Reference Swap Demonstration */
+    printf("[Call by Reference] Swapping Length and Width values...\\n");
+    swapDimensions(&length, &width);
+
+    printf("After swapDimensions(&length, &width):\\n");
+    printf("  New Length : %.2f\\n", length);
+    printf("  New Width  : %.2f\\n", width);
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "",
+        runner: () => {
+          return {
+            stdout: `==================================================\n   CS25C01: FUNCTIONS & PARAMETER PASSING         \n==================================================\nInitial Dimensions : Length = 12.50, Width = 8.00\nCalculated Area    : 100.00 sq. units\n\n[Call by Reference] Swapping Length and Width values...\nAfter swapDimensions(&length, &width):\n  New Length : 8.00\n  New Width  : 12.50\n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex4",
+        number: "Ex.No. 4",
+        title: "Dynamic Arrays & Pointer Arithmetic",
+        category: "Heap & Pointers",
+        aim: "To Write a C Program to allocate a dynamic array on the heap using malloc(), reallocate with realloc(), traverse using pointer arithmetic, and prevent memory leaks using free().",
+        pac: [
+          { sec: "Memory", desc: "Dynamic memory allocation on heap: malloc, realloc, *(ptr + i), and free." }
+        ],
+        pseudocode: `ptr = malloc(n * sizeof(int))
+*(ptr + i) = val
+ptr = realloc(ptr, new_size)
+free(ptr)`,
+        algorithm: [
+          "Start.",
+          "Allocate heap memory block for n integers using (int*)malloc(n * sizeof(int)).",
+          "Verify memory pointer is not NULL.",
+          "Populate elements using pointer arithmetic *(arr + i).",
+          "Resize heap allocation using realloc() to accommodate additional elements.",
+          "Print values and memory offset displacements.",
+          "Deallocate pointer with free(arr) and assign arr = NULL to avoid dangling pointers.",
+          "Stop."
+        ],
+        viva: [
+          { q: "What is the difference between malloc() and calloc()?", a: "malloc() allocates uninitialized memory containing garbage values; calloc() allocates and initializes every byte to zero." },
+          { q: "What is a memory leak in C?", a: "Failing to release dynamically allocated heap memory before pointers go out of scope." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 4: Dynamic Arrays & Pointer Arithmetic
+ * Regulation 2025 - Anna University
+ */
+
+int main(void) {
+    int initial_size = 3;
+    int expanded_size = 5;
+    int *arr = NULL;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: DYNAMIC HEAP ARRAYS & POINTERS        \\n");
+    printf("==================================================\\n");
+
+    /* Step 1: Initial Allocation with malloc() */
+    printf("[1] Allocating memory for %d elements via malloc()...\\n", initial_size);
+    arr = (int*) malloc(initial_size * sizeof(int));
+    if (arr == NULL) {
+        fprintf(stderr, "Heap memory allocation failed!\\n");
+        return EXIT_FAILURE;
+    }
+
+    /* Assigning elements using pointer offsets *(arr + i) */
+    *(arr + 0) = 10;
+    *(arr + 1) = 20;
+    *(arr + 2) = 30;
+
+    printf("    Elements populated via pointer arithmetic:\\n");
+    for (int i = 0; i < initial_size; i++) {
+        printf("      *(arr + %d) = %d [Address: %p]\\n", i, *(arr + i), (void*)(arr + i));
+    }
+
+    /* Step 2: Resizing Array with realloc() */
+    printf("\\n[2] Resizing array to %d elements via realloc()...\\n", expanded_size);
+    int *temp = (int*) realloc(arr, expanded_size * sizeof(int));
+    if (temp == NULL) {
+        fprintf(stderr, "Reallocation failed!\\n");
+        free(arr);
+        return EXIT_FAILURE;
+    }
+    arr = temp;
+
+    /* Populate the new slots */
+    *(arr + 3) = 40;
+    *(arr + 4) = 50;
+
+    printf("    Expanded Array Elements:\\n");
+    int sum = 0;
+    for (int i = 0; i < expanded_size; i++) {
+        printf("      Index [%d] -> Value: %d\\n", i, *(arr + i));
+        sum += *(arr + i);
+    }
+    printf("    Calculated Array Sum: %d\\n", sum);
+
+    /* Step 3: Deallocate heap memory */
+    printf("\\n[3] Freeing memory block to prevent memory leaks...\\n");
+    free(arr);
+    arr = NULL; /* Nullify pointer to eliminate dangling references */
+    printf("    Memory deallocated and pointer safely grounded to NULL.\\n");
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "",
+        runner: () => {
+          return {
+            stdout: `==================================================\n   CS25C01: DYNAMIC HEAP ARRAYS & POINTERS        \n==================================================\n[1] Allocating memory for 3 elements via malloc()...\n    Elements populated via pointer arithmetic:\n      *(arr + 0) = 10 [Address: 0x55f9a1b0]\n      *(arr + 1) = 20 [Address: 0x55f9a1b4]\n      *(arr + 2) = 30 [Address: 0x55f9a1b8]\n\n[2] Resizing array to 5 elements via realloc()...\n    Expanded Array Elements:\n      Index [0] -> Value: 10\n      Index [1] -> Value: 20\n      Index [2] -> Value: 30\n      Index [3] -> Value: 40\n      Index [4] -> Value: 50\n    Calculated Array Sum: 150\n\n[3] Freeing memory block to prevent memory leaks...\n    Memory deallocated and pointer safely grounded to NULL.\n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex5",
+        number: "Ex.No. 5",
+        title: "Structures vs Unions Architecture",
+        category: "Composite Types",
+        aim: "To Write a C Program comparing memory layouts, member offsets, and byte footprints of Structures versus Unions.",
+        pac: [
+          { sec: "Layout", desc: "struct (additive allocation with padding) vs union (single overlapping shared buffer)." }
+        ],
+        pseudocode: `struct S { int id; float m; char g; }; union U { int id; float m; char g; };
+PRINT sizeof(struct), sizeof(union)
+DEMONSTRATE union overwriting`,
+        algorithm: [
+          "Start.",
+          "Define struct Student with integer, float, and char fields.",
+          "Define union DataRecord with identical field types.",
+          "Measure and display memory sizes using sizeof operator.",
+          "Illustrate that struct maintains all members concurrently.",
+          "Illustrate that assigning to a union member overwrites preceding members because of memory overlap.",
+          "Stop."
+        ],
+        viva: [
+          { q: "How is the total size of a union computed by the compiler?", a: "The size is equal to the size of its largest member, rounded up to the alignment boundary of the members." },
+          { q: "What is structure padding and alignment?", a: "Compilers insert unused padding bytes between struct members to align them to machine word boundaries for fast memory access." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 5: Structures and Unions Memory Footprints
+ * Regulation 2025 - Anna University
+ */
+
+struct Student {
+    int rollNumber;
+    float cgpa;
+    char grade;
+};
+
+union DataRecord {
+    int rollNumber;
+    float cgpa;
+    char grade;
+};
+
+int main(void) {
+    struct Student s = {101, 9.45f, 'O'};
+    union DataRecord u;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: STRUCTURES VS UNIONS COMPARISON       \\n");
+    printf("==================================================\\n");
+
+    /* 1. Size Comparison */
+    printf("[1] Memory Footprint Analysis:\\n");
+    printf("    sizeof(struct Student)   : %lu bytes (Independent storage)\\n", sizeof(struct Student));
+    printf("    sizeof(union DataRecord) : %lu bytes (Overlapping storage)\\n", sizeof(union DataRecord));
+
+    /* 2. Struct Independent Memory */
+    printf("\\n[2] Struct Data Integrity:\\n");
+    printf("    Roll: %d | CGPA: %.2f | Grade: %c (All fields preserved)\\n", 
+           s.rollNumber, s.cgpa, s.grade);
+
+    /* 3. Union Overlapping Demonstration */
+    printf("\\n[3] Union Mutual Overwrite Test:\\n");
+    u.rollNumber = 1001;
+    printf("    Assigned u.rollNumber = %d\\n", u.rollNumber);
+
+    u.cgpa = 8.75f;
+    printf("    Assigned u.cgpa = %.2f\\n", u.cgpa);
+    printf("    Inspecting u.rollNumber now (corrupted): %d\\n", u.rollNumber);
+
+    u.grade = 'A';
+    printf("    Assigned u.grade = '%c'\\n", u.grade);
+    printf("    Inspecting u.cgpa now (corrupted): %.2f\\n", u.cgpa);
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "",
+        runner: () => {
+          return {
+            stdout: `==================================================\n   CS25C01: STRUCTURES VS UNIONS COMPARISON       \n==================================================\n[1] Memory Footprint Analysis:\n    sizeof(struct Student)   : 12 bytes (Independent storage)\n    sizeof(union DataRecord) : 4 bytes (Overlapping storage)\n\n[2] Struct Data Integrity:\n    Roll: 101 | CGPA: 9.45 | Grade: O (All fields preserved)\n\n[3] Union Mutual Overwrite Test:\n    Assigned u.rollNumber = 1001\n    Assigned u.cgpa = 8.75\n    Inspecting u.rollNumber now (corrupted): 1091260416\n    Assigned u.grade = 'A'\n    Inspecting u.cgpa now (corrupted): 8.75\n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex6",
+        number: "Ex.No. 6",
+        title: "Text & Binary File Operations",
+        category: "File I/O",
+        aim: "To Write a C Program demonstrating text file operations (fopen, fprintf, fgets) and binary record streaming (fwrite, fread).",
+        pac: [
+          { sec: "I/O", desc: "Sequential file writes/reads with 'w', 'r', 'wb', and 'rb' modes." }
+        ],
+        pseudocode: `OPEN text "record.txt", "w" -> WRITE -> CLOSE
+OPEN binary "data.bin", "wb" -> fwrite(&struct, size, 1) -> CLOSE
+OPEN binary "data.bin", "rb" -> fread(&struct, size, 1) -> CLOSE`,
+        algorithm: [
+          "Start.",
+          "Open 'report.txt' in write mode ('w') using fopen().",
+          "Write text with fprintf() and close with fclose().",
+          "Define binary struct Record.",
+          "Open 'student.bin' in write-binary mode ('wb').",
+          "Serialize struct instance to file with fwrite().",
+          "Reopen binary file in 'rb' mode, read record with fread(), and display fields.",
+          "Stop."
+        ],
+        viva: [
+          { q: "What is the difference between text mode and binary mode file access?", a: "Text mode translates newline sequences (e.g., \\n to \\r\\n on Windows); binary mode reads and writes raw bytes without translation." },
+          { q: "Why check the return value of fopen()?", a: "If the file cannot be opened (due to permissions, missing directory, etc.), fopen() returns NULL; dereferencing it causes a segmentation fault." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 6: Text & Binary File Operations
+ * Regulation 2025 - Anna University
+ */
+
+typedef struct {
+    int id;
+    char name[32];
+    double cgpa;
+} StudentRecord;
+
+int main(void) {
+    FILE *fp = NULL;
+    StudentRecord outStudent = {202501, "Aishwarya R", 9.68};
+    StudentRecord inStudent;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: TEXT & BINARY FILE OPERATIONS         \\n");
+    printf("==================================================\\n");
+
+    /* 1. Text File Operations */
+    printf("[1] Writing formatted report to text file 'report.txt'...\\n");
+    fp = fopen("report.txt", "w");
+    if (fp == NULL) {
+        perror("Failed to create report.txt");
+        return EXIT_FAILURE;
+    }
+    fprintf(fp, "Anna University Regulation 2025\\nDepartment of CSE\\nCS25C01 C Lab Record\\n");
+    fclose(fp);
+    printf("    Text write completed successfully.\\n");
+
+    /* 2. Binary File Serialization */
+    printf("\\n[2] Serializing binary record to 'student.bin'...\\n");
+    fp = fopen("student.bin", "wb");
+    if (fp == NULL) {
+        perror("Failed to create student.bin");
+        return EXIT_FAILURE;
+    }
+    fwrite(&outStudent, sizeof(StudentRecord), 1, fp);
+    fclose(fp);
+    printf("    Binary structure successfully written.\\n");
+
+    /* 3. Binary File Deserialization */
+    printf("\\n[3] Deserializing binary record from 'student.bin'...\\n");
+    fp = fopen("student.bin", "rb");
+    if (fp == NULL) {
+        perror("Failed to open student.bin for reading");
+        return EXIT_FAILURE;
+    }
+    fread(&inStudent, sizeof(StudentRecord), 1, fp);
+    fclose(fp);
+
+    printf("    Read ID   : %d\\n", inStudent.id);
+    printf("    Read Name : %s\\n", inStudent.name);
+    printf("    Read CGPA : %.2f\\n", inStudent.cgpa);
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "",
+        runner: () => {
+          return {
+            stdout: `==================================================\n   CS25C01: TEXT & BINARY FILE OPERATIONS         \n==================================================\n[1] Writing formatted report to text file 'report.txt'...\n    Text write completed successfully.\n\n[2] Serializing binary record to 'student.bin'...\n    Binary structure successfully written.\n\n[3] Deserializing binary record from 'student.bin'...\n    Read ID   : 202501\n    Read Name : Aishwarya R\n    Read CGPA : 9.68\n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex7",
+        number: "Ex.No. 7",
+        title: "Standard & User-Defined Libraries",
+        category: "Libraries",
+        aim: "To Write a C Program to calculate Circle Area and Circumference using the standard math library (<math.h>) and custom header routines.",
+        pac: [
+          { sec: "Input", desc: "Radius r of circle." },
+          { sec: "Process", desc: "Area = PI * r^2, Circumference = 2 * PI * r using pow() and sqrt()." },
+          { sec: "Output", desc: "Computed geometric values." }
+        ],
+        pseudocode: `INCLUDE <math.h>
+area = M_PI * pow(r, 2.0)
+circ = 2.0 * M_PI * r`,
+        algorithm: [
+          "Start.",
+          "Include standard <math.h>.",
+          "Define mathematical constant PI.",
+          "Read radius value from standard input.",
+          "Invoke pow(r, 2.0) to compute Area = PI * r * r.",
+          "Compute Circumference = 2 * PI * r.",
+          "Display results with formatted precision.",
+          "Stop."
+        ],
+        viva: [
+          { q: "Why must GCC compile with the '-lm' linker flag?", a: "The math library functions are not in libc; they reside in libm. The flag tells ld to link libm.so." },
+          { q: "What does the function sqrt(-1.0) return in C?", a: "It returns NaN (Not a Number) and sets errno to EDOM." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 7: Standard & User-Defined Libraries
+ * Regulation 2025 - Anna University
+ */
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+/* User-defined library helper functions */
+double calculateCircleArea(double radius) {
+    return M_PI * pow(radius, 2.0);
+}
+
+double calculateCircleCircumference(double radius) {
+    return 2.0 * M_PI * radius;
+}
+
+int main(void) {
+    double radius = 7.0;
+
+    printf("==================================================\\n");
+    printf("   CS25C01: STANDARD MATH & MODULAR LIBRARIES     \\n");
+    printf("==================================================\\n");
+    printf("Circle Radius Input : %.2f units\\n\\n", radius);
+
+    double area = calculateCircleArea(radius);
+    double circumference = calculateCircleCircumference(radius);
+
+    printf("Results Computed:\\n");
+    printf("  Area          : %.4f sq. units\\n", area);
+    printf("  Circumference : %.4f units\\n", circumference);
+    printf("  sqrt(Area)    : %.4f (Standard math.h function)\\n", sqrt(area));
+    printf("==================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "7.0",
+        runner: (stdin) => {
+          const r = parseFloat(stdin.trim()) || 7.0;
+          const a = Math.PI * r * r;
+          const c = 2 * Math.PI * r;
+          return {
+            stdout: `==================================================\n   CS25C01: STANDARD MATH & MODULAR LIBRARIES     \n==================================================\nCircle Radius Input : ${r.toFixed(2)} units\n\nResults Computed:\n  Area          : ${a.toFixed(4)} sq. units\n  Circumference : ${c.toFixed(4)} units\n  sqrt(Area)    : ${Math.sqrt(a).toFixed(4)} (Standard math.h function)\n==================================================`,
+            exitCode: 0
+          };
+        }
+      },
+      {
+        id: "ex8",
+        number: "Ex.No. 8",
+        title: "Mini-Project: Contact Management System",
+        category: "Capstone Mini-Project",
+        aim: "To design and implement a Contact Management System using C Structures, dynamic CRUD operations, and formatted console rendering.",
+        pac: [
+          { sec: "Architecture", desc: "Modular architecture: Contact entity, directory storage, record filtering, and report generation." }
+        ],
+        pseudocode: `STRUCT Contact { name, phone, email, category }
+MENU DISPATCH: 1.List, 2.Search, 3.Add, 4.Exit`,
+        algorithm: [
+          "Start.",
+          "Define Contact structure containing name, phone, email, and category strings.",
+          "Initialize an array of contacts with pre-seeded directory records.",
+          "Display welcome header and directory statistics.",
+          "Traverse directory array and display each contact.",
+          "Perform linear search by name.",
+          "Stop."
+        ],
+        viva: [
+          { q: "How can this project be scaled to handle thousands of records dynamically?", a: "Replace the fixed-size array with a dynamically expanding array using realloc() or a Doubly Linked List with file persistence." },
+          { q: "Why use fgets() over gets() for reading names?", a: "gets() does not check buffer bounds, causing dangerous buffer overflows; fgets() enforces a maximum character limit." }
+        ],
+        code: `#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/**
+ * CS25C01 - Computer Programming: C LAB
+ * Experiment 8: Contact Management System Mini-Project
+ * Regulation 2025 - Anna University
+ */
+
+#define MAX_NAME  32
+#define MAX_PHONE 16
+#define MAX_EMAIL 40
+
+typedef struct {
+    int id;
+    char name[MAX_NAME];
+    char phone[MAX_PHONE];
+    char email[MAX_EMAIL];
+    char group[16];
+} Contact;
+
+void displayDirectory(const Contact list[], int count) {
+    printf("\\n+-----+----------------------+------------------+------------------------------+------------+\\n");
+    printf("| ID  | Name                 | Phone Number     | Email Address                | Category   |\\n");
+    printf("+-----+----------------------+------------------+------------------------------+------------+\\n");
+    for (int i = 0; i < count; i++) {
+        printf("| %-3d | %-20s | %-16s | %-28s | %-10s |\\n",
+               list[i].id, list[i].name, list[i].phone, list[i].email, list[i].group);
+    }
+    printf("+-----+----------------------+------------------+------------------------------+------------+\\n");
+}
+
+int main(void) {
+    Contact directory[3] = {
+        {101, "Arun Kumar S",     "+91 98401 23456", "arun.cse@annauniv.edu",    "Faculty"},
+        {102, "Divya Bharathi R", "+91 94440 98765", "divya.b@annauniv.edu",     "Student"},
+        {103, "Gokul Raj M",      "+91 98840 55443", "gokul.raj@annauniv.edu",    "Staff"}
+    };
+    int totalContacts = 3;
+
+    printf("=============================================================================================\\n");
+    printf("                 CS25C01: CONTACT DIRECTORY MANAGEMENT SYSTEM                                \\n");
+    printf("                 Department of Computer Science and Engineering                              \\n");
+    printf("=============================================================================================\\n");
+    printf("Total Records Loaded : %d\\n", totalContacts);
+
+    displayDirectory(directory, totalContacts);
+
+    printf("\\nSearch Query Demonstration: Searching for 'Divya Bharathi R'...\\n");
+    int found = 0;
+    for (int i = 0; i < totalContacts; i++) {
+        if (strstr(directory[i].name, "Divya") != NULL) {
+            printf(">> Record Located! ID: %d | Phone: %s | Email: %s\\n",
+                   directory[i].id, directory[i].phone, directory[i].email);
+            found = 1;
+            break;
+        }
+    }
+    if (!found) printf("No record matching query.\\n");
+
+    printf("\\nStatus: Compilation: gcc -Wall main.c -o contact_mgr | Zero Warnings.\\n");
+    printf("=============================================================================================\\n");
+
+    return EXIT_SUCCESS;
+}`,
+        defaultStdin: "",
+        runner: () => {
+          return {
+            stdout: `=============================================================================================\n                 CS25C01: CONTACT DIRECTORY MANAGEMENT SYSTEM                                \n                 Department of Computer Science and Engineering                              \n=============================================================================================\nTotal Records Loaded : 3\n\n+-----+----------------------+------------------+------------------------------+------------+\n| ID  | Name                 | Phone Number     | Email Address                | Category   |\n+-----+----------------------+------------------+------------------------------+------------+\n| 101 | Arun Kumar S         | +91 98401 23456  | arun.cse@annauniv.edu        | Faculty    |\n| 102 | Divya Bharathi R     | +91 94440 98765  | divya.b@annauniv.edu         | Student    |\n| 103 | Gokul Raj M          | +91 98840 55443  | gokul.raj@annauniv.edu       | Staff      |\n+-----+----------------------+------------------+------------------------------+------------+\n\nSearch Query Demonstration: Searching for 'Divya Bharathi R'...\n>> Record Located! ID: 102 | Phone: +91 94440 98765 | Email: divya.b@annauniv.edu\n\nStatus: Compilation: gcc -Wall main.c -o contact_mgr | Zero Warnings.\n=============================================================================================`,
+            exitCode: 0
+          };
+        }
+      }
+    ];
+
+    let currentExIdx = 0;
+    let currentDocTab = 'manual';
+    let currentLayoutMode = 'split'; // 'split', 'code', 'manual'
+    let currentFontSize = 13;
+    let isTerminalCollapsed = false;
+
+    function initPortal() {
+      renderNavigation(labExperiments);
+      selectExperiment(0);
+      setupKeyboardShortcuts();
+      updateFontSizeStyle();
+    }
+
+    function toggleSidebar(open) {
+      const sb = document.getElementById("sidebar");
+      const overlay = document.getElementById("sidebar-overlay");
+      if (open) {
+        sb.classList.remove("-translate-x-full");
+        overlay.classList.remove("hidden");
+      } else {
+        sb.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+      }
+    }
+
+    function renderNavigation(items) {
+      const nav = document.getElementById("nav-list");
+      nav.innerHTML = "";
+      if (items.length === 0) {
+        nav.innerHTML = `<div class="p-3 text-[11px] text-slate-500 text-center">No experiments found</div>`;
+        return;
+      }
+      items.forEach((item) => {
+        const originalIndex = labExperiments.findIndex(x => x.id === item.id);
+        const isActive = originalIndex === currentExIdx;
+        const btn = document.createElement("button");
+        btn.onclick = () => {
+          selectExperiment(originalIndex);
+          if (window.innerWidth < 768) toggleSidebar(false);
+        };
+        btn.className = `w-full text-left p-2 rounded-lg text-xs transition flex flex-col gap-0.5 border ${
+          isActive 
+            ? "bg-sky-500/10 border-sky-500/40 text-sky-300 font-medium" 
+            : "border-transparent text-slate-300 hover:bg-[#161b22] hover:text-white"
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between w-full">
+            <span class="font-mono text-[11px] ${isActive ? 'text-sky-400 font-bold' : 'text-slate-400'}">${item.number}</span>
+            <span class="text-[9px] px-1 py-0.2 rounded bg-[#010409] text-slate-400 border border-[#21262d]">${item.category}</span>
+          </div>
+          <div class="truncate text-slate-200 text-[11px]">${item.title}</div>
+        `;
+        nav.appendChild(btn);
+      });
+      document.getElementById("module-counter").innerText = `${items.length} items`;
+    }
+
+    function filterExercises() {
+      const query = document.getElementById("search-input").value.toLowerCase().trim();
+      const filtered = labExperiments.filter(ex => 
+        ex.title.toLowerCase().includes(query) ||
+        ex.number.toLowerCase().includes(query) ||
+        ex.aim.toLowerCase().includes(query)
+      );
+      renderNavigation(filtered);
+    }
+
+    function selectExperiment(idx) {
+      currentExIdx = idx;
+      const ex = labExperiments[idx];
+
+      document.getElementById("active-badge").innerText = ex.number;
+      document.getElementById("active-name").innerText = ex.title;
+
+      document.getElementById("code-editor").value = ex.code;
+      document.getElementById("stdin-value").value = ex.defaultStdin || "";
+
+      filterExercises();
+      renderDocTab();
+      updateLineNumbers();
+
+      // Reset Terminal
+      const screen = document.getElementById("terminal-screen");
+      screen.innerHTML = `<span class="text-slate-500">// Environment ready for ${ex.number}. Click 'Build & Run'.</span>`;
+      document.getElementById("exit-badge").classList.add("hidden");
+      document.getElementById("runtime-badge").classList.add("hidden");
+    }
+
+    function setLayoutMode(mode) {
+      currentLayoutMode = mode;
+      const manualPanel = document.getElementById("panel-manual");
+      const codePanel = document.getElementById("panel-code");
+      const splitBtn = document.getElementById("btn-mode-split");
+      const codeBtn = document.getElementById("btn-mode-code");
+      const manualBtn = document.getElementById("btn-mode-manual");
+
+      [splitBtn, codeBtn, manualBtn].forEach(b => b.classList.remove("view-mode-active"));
+
+      if (mode === 'split') {
+        manualPanel.className = "lg:col-span-5 flex flex-col border-b lg:border-b-0 lg:border-r border-[#21262d] bg-[#0d1117]/40 overflow-hidden";
+        codePanel.className = "lg:col-span-7 flex flex-col h-full bg-[#010409] overflow-hidden";
+        splitBtn.classList.add("view-mode-active");
+      } else if (mode === 'code') {
+        manualPanel.className = "hidden";
+        codePanel.className = "lg:col-span-12 flex flex-col h-full bg-[#010409] overflow-hidden";
+        codeBtn.classList.add("view-mode-active");
+        showToast("Full Program Focus View Enabled", "info");
+      } else if (mode === 'manual') {
+        manualPanel.className = "lg:col-span-12 flex flex-col h-full bg-[#0d1117]/40 overflow-hidden";
+        codePanel.className = "hidden";
+        manualBtn.classList.add("view-mode-active");
+      }
+      setTimeout(updateLineNumbers, 50);
+    }
+
+    function changeFontSize(delta) {
+      currentFontSize = Math.min(22, Math.max(10, currentFontSize + delta));
+      updateFontSizeStyle();
+    }
+
+    function updateFontSizeStyle() {
+      document.documentElement.style.setProperty('--editor-font-size', `${currentFontSize}px`);
+      document.getElementById("font-size-label").innerText = `${currentFontSize}px`;
+      updateLineNumbers();
+    }
+
+    function toggleTerminalCollapse() {
+      const termWrapper = document.getElementById("terminal-wrapper");
+      const icon = document.getElementById("term-toggle-icon");
+      const label = document.getElementById("term-toggle-label");
+      isTerminalCollapsed = !isTerminalCollapsed;
+
+      if (isTerminalCollapsed) {
+        termWrapper.style.height = "36px";
+        icon.className = "fa-solid fa-chevron-up mr-1";
+        label.innerText = "Expand";
+      } else {
+        termWrapper.style.height = "";
+        icon.className = "fa-solid fa-chevron-down mr-1";
+        label.innerText = "Shrink";
+      }
+    }
+
+    function toggleZenCodeModal(open) {
+      const modal = document.getElementById("zen-modal");
+      if (open) {
+        const ex = labExperiments[currentExIdx];
+        document.getElementById("zen-title").innerText = `${ex.number}: ${ex.title} (program.c)`;
+        document.getElementById("zen-code-pre").innerText = document.getElementById("code-editor").value;
+        modal.classList.remove("hidden");
+      } else {
+        modal.classList.add("hidden");
+      }
+    }
+
+    function updateLineNumbers() {
+      const editor = document.getElementById("code-editor");
+      const gutter = document.getElementById("line-counter");
+      const lines = editor.value.split("\n").length;
+      let counter = "";
+      for (let i = 1; i <= lines; i++) {
+        counter += i + "\n";
+      }
+      gutter.innerText = counter;
+      document.getElementById("line-indicator").innerText = `${lines} lines`;
+    }
+
+    function syncEditorScroll() {
+      const editor = document.getElementById("code-editor");
+      const gutter = document.getElementById("line-counter");
+      gutter.scrollTop = editor.scrollTop;
+    }
+
+    function switchDocTab(tab) {
+      currentDocTab = tab;
+      ['manual', 'algorithm', 'viva'].forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tab) {
+          btn.className = "px-3 py-2 text-xs font-semibold rounded-t border-b-2 border-sky-400 text-sky-400 bg-[#161b22] flex items-center gap-1.5 shrink-0";
+        } else {
+          btn.className = "px-3 py-2 text-xs font-semibold rounded-t border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-1.5 shrink-0";
+        }
+      });
+      renderDocTab();
+    }
+
+    function renderDocTab() {
+      const ex = labExperiments[currentExIdx];
+      const panel = document.getElementById("manual-content");
+
+      if (currentDocTab === 'manual') {
+        panel.innerHTML = `
+          <div>
+            <div class="text-[10px] font-mono text-sky-400 font-bold uppercase tracking-wider mb-1">${ex.category}</div>
+            <h2 class="text-sm font-bold text-white">${ex.number}: ${ex.title}</h2>
+          </div>
+
+          <div class="space-y-1.5">
+            <h3 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+              <i class="fa-solid fa-bullseye text-sky-400"></i> Aim of Experiment
+            </h3>
+            <div class="p-3 bg-[#010409] border border-[#21262d] rounded-lg text-slate-200 leading-relaxed font-sans">
+              ${ex.aim}
+            </div>
+          </div>
+
+          ${ex.pac ? `
+          <div class="space-y-1.5">
+            <h3 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+              <i class="fa-solid fa-table-list text-sky-400"></i> Problem Analysis Chart (PAC)
+            </h3>
+            <div class="border border-[#21262d] rounded-lg overflow-hidden bg-[#010409]">
+              <table class="w-full text-left text-[11px]">
+                <thead>
+                  <tr class="bg-[#161b22] text-sky-300 font-mono border-b border-[#21262d]">
+                    <th class="py-2 px-3 w-28 font-medium">Phase</th>
+                    <th class="py-2 px-3 font-medium">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[#21262d]">
+                  ${ex.pac.map(row => `
+                    <tr>
+                      <td class="py-2 px-3 font-semibold text-slate-200 bg-[#090d14]">${row.sec}</td>
+                      <td class="py-2 px-3 text-slate-300 leading-normal">${row.desc}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          ` : ''}
+
+          <div class="p-3 bg-[#010409] border border-[#21262d] rounded-lg flex items-center justify-between">
+            <span class="text-[11px] text-slate-400 font-medium">Anna University Laboratory Evaluation</span>
+            <span class="text-[10px] font-mono text-slate-500 border-b border-dashed border-slate-600 px-4 py-0.5">Faculty Seal</span>
+          </div>
+        `;
+      } else if (currentDocTab === 'algorithm') {
+        panel.innerHTML = `
+          <div class="space-y-4">
+            <div class="space-y-1.5">
+              <h3 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-list-check text-sky-400"></i> Step-by-Step Algorithm
+              </h3>
+              <ol class="space-y-1.5 text-xs">
+                ${ex.algorithm.map((step, sIdx) => `
+                  <li class="flex items-start gap-2 p-2 bg-[#010409] rounded border border-[#21262d]">
+                    <span class="w-4 h-4 rounded bg-sky-950 text-sky-400 border border-sky-800 flex items-center justify-center font-mono font-bold text-[9px] shrink-0 mt-0.5">${sIdx + 1}</span>
+                    <span class="text-slate-200 leading-relaxed">${step}</span>
+                  </li>
+                `).join('')}
+              </ol>
+            </div>
+
+            <div class="space-y-1.5">
+              <h3 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-code text-sky-400"></i> Pseudocode Blueprint
+              </h3>
+              <pre class="p-3 bg-[#010409] border border-[#21262d] rounded-lg font-mono text-xs text-sky-300 leading-relaxed overflow-x-auto">${ex.pseudocode}</pre>
+            </div>
+          </div>
+        `;
+      } else if (currentDocTab === 'viva') {
+        panel.innerHTML = `
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between pb-1 border-b border-[#21262d]">
+              <h3 class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                <i class="fa-solid fa-clipboard-question text-sky-400"></i> Viva Voce Questions & Answers
+              </h3>
+              <span class="text-[10px] text-sky-400 font-mono">Anna Univ Oral Exam</span>
+            </div>
+            <div class="space-y-2">
+              ${ex.viva.map((v, i) => `
+                <div class="p-3 bg-[#010409] border border-[#21262d] rounded-lg space-y-1">
+                  <div class="font-semibold text-xs text-sky-200 flex items-start gap-2">
+                    <span class="text-sky-400 font-mono font-bold">Q${i + 1}:</span>
+                    <span>${v.q}</span>
+                  </div>
+                  <div class="text-[11.5px] text-slate-400 pl-5 border-l-2 border-slate-700 mt-1">
+                    <strong class="text-slate-300">Answer:</strong> ${v.a}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function executeGccBuild() {
+      const ex = labExperiments[currentExIdx];
+      const stdinVal = document.getElementById("stdin-value").value;
+      const screen = document.getElementById("terminal-screen");
+      const exitBadge = document.getElementById("exit-badge");
+      const runtimeBadge = document.getElementById("runtime-badge");
+
+      exitBadge.classList.add("hidden");
+      runtimeBadge.classList.add("hidden");
+
+      screen.innerHTML = `<span class="text-sky-400 font-bold">$ gcc -Wall -Wextra -std=c23 main.c -lm -o main</span>\n<span class="text-slate-400">Linking object code...</span>\n`;
+
+      const startTime = performance.now();
+
+      setTimeout(() => {
+        const elapsed = (performance.now() - startTime).toFixed(1);
+        screen.innerHTML += `<span class="text-sky-400 font-bold">$ ./main</span>\n`;
+        
+        const result = ex.runner(stdinVal);
+        screen.innerHTML += `<span class="${result.exitCode === 0 ? 'text-emerald-400' : 'text-rose-400'} whitespace-pre-wrap">${escapeHtml(result.stdout)}</span>\n`;
+
+        exitBadge.innerText = `Exit Code: ${result.exitCode}`;
+        exitBadge.className = `text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+          result.exitCode === 0 
+            ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800/60' 
+            : 'bg-rose-950/80 text-rose-400 border-rose-800/60'
+        }`;
+        exitBadge.classList.remove("hidden");
+
+        runtimeBadge.innerText = `${elapsed} ms`;
+        runtimeBadge.classList.remove("hidden");
+
+        screen.scrollTop = screen.scrollHeight;
+        showToast(result.exitCode === 0 ? "Compilation & execution succeeded." : "Exited with non-zero return code.", result.exitCode === 0 ? "success" : "error");
+      }, 200);
+    }
+
+    function clearTerminal() {
+      document.getElementById("terminal-screen").innerHTML = `<span class="text-slate-500">// Terminal screen cleared. Ready.</span>`;
+      document.getElementById("exit-badge").classList.add("hidden");
+      document.getElementById("runtime-badge").classList.add("hidden");
+    }
+
+    function copySourceCode() {
+      const code = document.getElementById("code-editor").value;
+      const t = document.createElement("textarea");
+      document.body.appendChild(t);
+      t.value = code;
+      t.select();
+      document.execCommand("copy");
+      document.body.removeChild(t);
+      showToast("Full C Program copied to clipboard.", "success");
+    }
+
+    function downloadCFile() {
+      const ex = labExperiments[currentExIdx];
+      const code = document.getElementById("code-editor").value;
+      const blob = new Blob([code], { type: "text/x-csrc;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${ex.id}_${ex.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}.c`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("C source file downloaded.", "success");
+    }
+
+    function resetSourceCode() {
+      const ex = labExperiments[currentExIdx];
+      document.getElementById("code-editor").value = ex.code;
+      document.getElementById("stdin-value").value = ex.defaultStdin || "";
+      updateLineNumbers();
+      showToast("Reset to official university reference code.", "info");
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function toggleModal(id, open) {
+      const el = document.getElementById(id);
+      if (open) el.classList.remove("hidden");
+      else el.classList.add("hidden");
+    }
+
+    function showToast(msg, type = "info") {
+      const deck = document.getElementById("toast-deck");
+      const el = document.createElement("div");
+      const icon = type === "success" ? "fa-circle-check text-emerald-400" : type === "error" ? "fa-triangle-exclamation text-rose-400" : "fa-circle-info text-sky-400";
+      el.className = "flex items-center gap-2 px-3 py-2 bg-[#161b22] border border-[#30363d] rounded-lg shadow-xl text-xs text-slate-100 transition-opacity duration-200";
+      el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${msg}</span>`;
+      deck.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        setTimeout(() => el.remove(), 250);
+      }, 2400);
+    }
+
+    function setupKeyboardShortcuts() {
+      const editor = document.getElementById("code-editor");
+      editor.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const start = editor.selectionStart;
+          const end = editor.selectionEnd;
+          editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+          editor.selectionStart = editor.selectionEnd = start + 4;
+          updateLineNumbers();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+          e.preventDefault();
+          executeGccBuild();
+        }
+      });
+    }
+
+    function printAnnaUnivRecord() {
+      const canvas = document.getElementById("print-canvas");
+      let html = `
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 25px;">
+          <h1 style="font-size: 18pt; font-weight: bold; margin: 0;">ANNA UNIVERSITY :: CHENNAI - 600 025</h1>
+          <h2 style="font-size: 13pt; margin: 4px 0;">DEPARTMENT OF COMPUTER SCIENCE AND ENGINEERING</h2>
+          <h3 style="font-size: 11pt; margin: 4px 0; color: #1e293b;">CS25C01 - COMPUTER PROGRAMMING: C LAB RECORD</h3>
+          <p style="font-size: 9pt; margin: 2px 0;">REGULATION 2025 | OFFICIAL PRACTICAL RECORD MANUAL</p>
+        </div>
+      `;
+
+      labExperiments.forEach((item) => {
+        const run = item.runner(item.defaultStdin || "");
+        html += `
+          <div class="print-page" style="margin-bottom: 25px;">
+            <div style="display:flex; justify-content:space-between; border-bottom: 1.5px solid #000; padding-bottom: 3px; margin-bottom: 8px;">
+              <strong style="font-size: 12pt;">${item.number}: ${item.title}</strong>
+              <span style="font-size: 9.5pt; font-family: monospace;">Date: ____________</span>
+            </div>
+
+            <p style="margin: 4px 0 8px 0; font-size: 9.5pt;"><strong>AIM:</strong> ${item.aim}</p>
+
+            ${item.pac ? `
+              <strong style="font-size: 9.5pt;">PROBLEM ANALYSIS CHART (PAC):</strong>
+              <table style="width: 100%; border-collapse: collapse; margin: 4px 0 10px 0; font-size: 9pt;" border="1">
+                <thead><tr style="background:#f1f5f9;"><th style="padding:4px; text-align:left; width:22%;">Phase</th><th style="padding:4px; text-align:left;">Description</th></tr></thead>
+                <tbody>
+                  ${item.pac.map(p => `<tr><td style="padding:4px; font-weight:bold;">${p.sec}</td><td style="padding:4px;">${p.desc}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            ` : ''}
+
+            <strong style="font-size: 9.5pt;">ALGORITHM:</strong>
+            <ol style="margin: 3px 0 8px 18px; font-size: 9pt; line-height: 1.4;">
+              ${item.algorithm.map(s => `<li>${s}</li>`).join('')}
+            </ol>
+
+            <strong style="font-size: 9.5pt;">COMPLETE C SOURCE CODE:</strong>
+            <pre style="padding: 8px; font-size: 8pt; line-height: 1.35; margin: 4px 0 8px 0; white-space: pre-wrap;">${escapeHtml(item.code)}</pre>
+
+            <strong style="font-size: 9.5pt;">SAMPLE TERMINAL OUTPUT:</strong>
+            <pre style="padding: 6px; font-size: 8pt; line-height: 1.3; margin: 4px 0 12px 0;">${escapeHtml(run.stdout)}</pre>
+
+            <div style="display:flex; justify-content:space-between; margin-top: 24px; padding-top: 10px; font-size: 9.5pt; font-weight: bold;">
+              <span>Faculty In-Charge Signature: __________________</span>
+              <span>Marks: ______ / 100</span>
+            </div>
+          </div>
+        `;
+      });
+
+      canvas.innerHTML = html;
+      window.print();
+    }
+
+    window.addEventListener("DOMContentLoaded", initPortal);
+  </script>
+</body>
+</html>
